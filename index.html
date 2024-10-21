@@ -83,63 +83,72 @@ h1:hover {
             context.scale(33, 33);
     
             const tetrominos = {
-                T: {
-                    shape: [
-                        [0, 1, 0],
-                        [1, 1, 1],
-                        [0, 0, 0]
-                    ],
-                    color: 'purple'
-                },
-                O: {
-                    shape: [
-                        [1, 1],
-                        [1, 1]
-                    ],
-                    color: 'yellow'
-                },
-                L: {
-                    shape: [
-                        [0, 0, 1],
-                        [1, 1, 1],
-                        [0, 0, 0]
-                    ],
-                    color: 'orange'
-                },
-                J: {
-                    shape: [
-                        [1, 0, 0],
-                        [1, 1, 1],
-                        [0, 0, 0]
-                    ],
-                    color: 'blue'
-                },
-                S: {
-                    shape: [
-                        [0, 1, 1],
-                        [1, 1, 0],
-                        [0, 0, 0]
-                    ],
-                    color: 'green'
-                },
-                Z: {
-                    shape: [
-                        [1, 1, 0],
-                        [0, 1, 1],
-                        [0, 0, 0]
-                    ],
-                    color: 'red'
-                },
-                I: {
-                    shape: [
-                        [0, 1, 0, 0],
-                        [0, 1, 0, 0],
-                        [0, 1, 0, 0],
-                        [0, 1, 0, 0]
-                    ],
-                    color: 'cyan'
-                }
-            };
+    T: {
+        shape: [
+            [0, 1, 0],
+            [1, 1, 1],
+        ],
+        color: 'purple'
+    },
+    O: {
+        shape: [
+            [1, 1],
+            [1, 1],
+        ],
+        color: 'yellow'
+    },
+    L: {
+        shape: [
+            [0, 0, 1],
+            [1, 1, 1],
+        ],
+        color: 'orange'
+    },
+    J: {
+        shape: [
+            [1, 0, 0],
+            [1, 1, 1],
+        ],
+        color: 'blue'
+    },
+    S: {
+        shape: [
+            [0, 1, 1],
+            [1, 1, 0],
+        ],
+        color: 'green'
+    },
+    Z: {
+        shape: [
+            [1, 1, 0],
+            [0, 1, 1],
+        ],
+        color: 'red'
+    },
+    I: {
+        shape: [
+            [1, 1, 1, 1],
+        ],
+        color: 'cyan'
+    },
+    // Új tetrominók
+    P: {
+        shape: [
+            [1, 1, 1],
+            [0, 1, 0],
+            [0, 1, 0]
+        ],
+        color: 'pink'
+    },
+    U: {
+        shape: [
+            [1, 0, 1],
+            [1, 1, 1],
+        ],
+        color: 'lightblue'
+    }
+};
+
     
             function createMatrix(width, height) {
                 const matrix = [];
@@ -152,16 +161,18 @@ h1:hover {
             const arena = createMatrix(12, 24);
     
             function randomTetromino() {
-                const tetrominoes = 'TOLJSZI';
+                const tetrominoes = 'TOLJSZIPU';  // P és U hozzáadva
                 const randomLetter = tetrominoes[Math.floor(Math.random() * tetrominoes.length)];
-                return tetrominos[randomLetter];
+            return tetrominos[randomLetter];
             }
     
             const player = {
-                pos: { x: 0, y: 0 },
-                tetromino: null,
-                score: 0,
-            };
+    pos: { x: 0, y: 0 },
+    tetromino: null,
+    score: 0,
+    speedLevel: 1, // Új változó a sebesség szint nyomon követésére
+};
+
     
             let gameOver = false;
             let dropInterval = 1000; // Esés intervallum (1000 ms = 1 másodperc)
@@ -220,26 +231,28 @@ h1:hover {
             }
     
             function arenaSweep() {
-                let rowCount = 1;
-                outer: for (let y = arena.length - 1; y >= 0; --y) {
-                    for (let x = 0; x < arena[y].length; ++x) {
-                        if (arena[y][x] === 0) {
-                            continue outer;
-                        }
-                    }
-                    const row = arena.splice(y, 1)[0].fill(0);
-                    arena.unshift(row);
-                    ++y;
-    
-                    player.score += rowCount * 100;
-                    rowCount *= 2;
-    
-                    // Ellenőrizzük, hogy a pontszám elérte-e az 500-at
-                    if (player.score >= 500) {
-                        dropInterval = Math.max(100, dropInterval - 500); // Csökkentjük az intervallumot 500 ms-al (de legalább 100 ms maradjon)
-                    }
-                }
+    let rowCount = 1;
+    outer: for (let y = arena.length - 1; y >= 0; --y) {
+        for (let x = 0; x < arena[y].length; ++x) {
+            if (arena[y][x] === 0) {
+                continue outer;
             }
+        }
+        const row = arena.splice(y, 1)[0].fill(0);
+        arena.unshift(row);
+        ++y;
+
+        player.score += rowCount * 100;
+        rowCount *= 2;
+
+        // Ellenőrizzük, hogy a pontszám elérte-e az újabb 500-at (500, 1000, 1500 stb.)
+        if (player.score >= player.speedLevel * 500) {
+            player.speedLevel++; // Növeljük a sebesség szintjét
+            dropInterval = Math.max(100, dropInterval - 250); // Csökkentjük az intervallumot 250 ms-al, de legalább 100 ms maradjon
+        }
+    }
+}
+
     
             function playerDrop() {
                 player.pos.y++;
@@ -268,26 +281,39 @@ h1:hover {
             }
     
             function draw() {
-                context.clearRect(0, 0, canvas.width, canvas.height);
-                arena.forEach((row, y) => {
-                    row.forEach((value, x) => {
-                        if (value !== 0) {
-                            context.fillStyle = value;
-                            context.fillRect(x, y, 1, 1);
-                        }
-                    });
-                });
+    context.clearRect(0, 0, canvas.width, canvas.height);
     
-                const { shape, color } = player.tetromino;
-                shape.forEach((row, y) => {
-                    row.forEach((value, x) => {
-                        if (value !== 0) {
-                            context.fillStyle = color;
-                            context.fillRect(player.pos.x + x, player.pos.y + y, 1, 1);
-                        }
-                    });
-                });
+    // Kirajzoljuk az aréna tartalmát
+    arena.forEach((row, y) => {
+        row.forEach((value, x) => {
+            if (value !== 0) {
+                context.fillStyle = value;
+                context.fillRect(x, y, 1, 1);
+
+                // Körvonal hozzáadása
+                context.strokeStyle = 'white'; // Fehér körvonal
+                context.lineWidth = 0.05;      // Körvonal vastagsága
+                context.strokeRect(x, y, 1, 1);
             }
+        });
+    });
+
+    // Kirajzoljuk a jelenlegi tetrominót
+    const { shape, color } = player.tetromino;
+    shape.forEach((row, y) => {
+        row.forEach((value, x) => {
+            if (value !== 0) {
+                context.fillStyle = color;
+                context.fillRect(player.pos.x + x, player.pos.y + y, 1, 1);
+
+                // Körvonal hozzáadása
+                context.strokeStyle = 'white'; // Fehér körvonal
+                context.lineWidth = 0.05;      // Körvonal vastagsága
+                context.strokeRect(player.pos.x + x, player.pos.y + y, 1, 1);
+            }
+        });
+    });
+}
     
             function updateScore() {
                 document.getElementById('score-box').style.display = 'block';
