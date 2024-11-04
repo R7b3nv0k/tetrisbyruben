@@ -427,6 +427,14 @@ function update(time = 0) {
     draw();
     requestAnimationFrame(update);
 }
+function hardDrop() {
+    const ghostPos = getGhostPosition();
+    player.pos.y = ghostPos.y;
+    merge(arena, player);
+    playerReset();
+    arenaSweep();
+    updateScore();
+}
 
 document.addEventListener('keydown', (event) => {
     if (gameOver) return;
@@ -436,8 +444,10 @@ document.addEventListener('keydown', (event) => {
         playerMove(-1);
     } else if (event.key === 'd') { // Jobbra
         playerMove(1);
-    } else if (event.key === 's') { // Lefele
+    } else if (event.key === 's') { // Lefele léptetés
         playerDrop();
+    } else if (event.key === ' ') { // Space: Hard Drop
+        hardDrop();
     }
 });
 
@@ -483,8 +493,14 @@ function draw() {
         row.forEach((value, x) => {
             if (value !== 0) {
                 context.fillStyle = player.tetromino.color;
-                context.globalAlpha = 0.3; // Halvány szín
+                context.globalAlpha = 0.3; // Halvány szín a szellemalakzatnak
                 context.fillRect(ghostPos.x + x, ghostPos.y + y, 1, 1);
+
+                // Körvonal a szellemalakzatnak
+                context.strokeStyle = 'rgba(255, 255, 255, 0.3)'; // Halványabb fehér körvonal
+                context.lineWidth = 0.05;
+                context.strokeRect(ghostPos.x + x, ghostPos.y + y, 1, 1);
+                
                 context.globalAlpha = 1.0; // Visszaállítás
             }
         });
@@ -496,6 +512,8 @@ function draw() {
             if (value !== 0) {
                 context.fillStyle = player.tetromino.color;
                 context.fillRect(player.pos.x + x, player.pos.y + y, 1, 1);
+
+                // Körvonal az aktuális tetrominónak
                 context.strokeStyle = 'white';
                 context.lineWidth = 0.05;
                 context.strokeRect(player.pos.x + x, player.pos.y + y, 1, 1);
