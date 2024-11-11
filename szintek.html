@@ -132,7 +132,9 @@
     <div id="game-over" style="display: none;">
         <h1>Vége a játéknak!</h1>
         <p id="final-score"></p>
+        <a href="index.html">
         <button id="restart-button">Vissza a főmenübe</button>
+    </a>
     </div>
     
     <div id="score-box" style="display: none;">
@@ -484,6 +486,147 @@ document.getElementById('restart-button').addEventListener('click', () => {
     restartGame();
 });
     
+// 1. Funkció a játék leállítására, különböző üzenetekkel
+function endGameWithMessage(message) {
+    gameOver = true;
+    document.getElementById('final-score').innerText = message;
+    document.getElementById('tetris').style.display = 'none';
+    document.getElementById('score-box').style.display = 'none';
+    document.getElementById('next-piece-box').style.display = 'none';
+    document.getElementById('game-over').style.display = 'block';
+
+    // "Vissza a szintekhez" gomb hozzáadása
+    const backButton = document.createElement("button");
+    backButton.innerText = "Vissza a szintekhez";
+    backButton.onclick = () => window.location.href = "szintek.html";
+    document.getElementById("game-over").appendChild(backButton);
+
+    // "Újra" gomb hozzáadása
+    const restartButton = document.createElement("button");
+    restartButton.innerText = "Újra";
+    restartButton.onclick = startLevel1;
+    document.getElementById("game-over").appendChild(restartButton);
+}
+
+// 2. Pontszám ellenőrzése az arenaSweep-ben
+function arenaSweep() {
+    let rowCount = 1;
+    outer: for (let y = arena.length - 1; y >= 0; --y) {
+        for (let x = 0; x < arena[y].length; ++x) {
+            if (arena[y][x] === 0) {
+                continue outer;
+            }
+        }
+        const row = arena.splice(y, 1)[0].fill(0);
+        arena.unshift(row);
+        ++y;
+
+        player.score += rowCount * 100;
+        rowCount *= 2;
+
+        // 500 pont elérésekor a játék leáll
+        if (player.score >= 500) {
+            endGameWithMessage("Első szint teljesítve!");
+            return;
+        }
+    }
+}
+
+// 3. Játék újraindítása a LEVEL 1 szinthez
+function startLevel1() {
+    gameOver = false;
+    arena.forEach(row => row.fill(0));
+    player.score = 0;
+    player.speedLevel = 1;
+    dropInterval = 1000;
+    document.getElementById('game-over').style.display = 'none';
+    document.getElementById('menu').style.display = 'none';
+    document.getElementById('tetris').style.display = 'block';
+    document.getElementById('score-box').style.display = 'block';
+    document.getElementById('next-piece-box').style.display = 'block';
+    nextTetromino = randomTetromino();
+    playerReset();
+    updateScore();
+    update();
+}
+
+// 4. Játék vége, ha a tetrominók elérik a pálya tetejét
+function playerReset() {
+    player.tetromino = nextTetromino;
+    player.pos.y = 0;
+    player.pos.x = (arena[0].length / 2 | 0) - (player.tetromino.shape[0].length / 2 | 0);
+
+    if (collide(arena, player)) {
+        endGameWithMessage("Az első pálya teljesítése sikertelen");
+    } else {
+        nextTetromino = randomTetromino();
+        drawNextPiece();
+    }
+}
+function showEndButtons() {
+    // Ellenőrizd, hogy a gombok léteznek-e már a dokumentumban
+    let retryButton = document.getElementById('retryButton');
+    let backButton = document.getElementById('backButton');
+
+    // Ha a gombok már léteznek, akkor ne adjuk hozzá újra
+    if (!retryButton) {
+        retryButton = document.createElement('button');
+        retryButton.id = 'retryButton';
+        retryButton.innerText = 'Újra';
+        retryButton.addEventListener('click', retryLevel); // Írd meg a retryLevel függvényt, ami újraindítja a szintet
+        document.body.appendChild(retryButton);
+    }
+
+    if (!backButton) {
+        backButton = document.createElement('button');
+        backButton.id = 'backButton';
+        backButton.innerText = 'Vissza a szintekhez';
+        backButton.addEventListener('click', goToLevels); // Írd meg a goToLevels függvényt, ami visszavisz a szintválasztó oldalra
+        document.body.appendChild(backButton);
+    }
+}
+function showEndScreen(message) {
+    // Ha már léteznek, először eltávolítjuk a duplikált elemeket
+    removeEndScreenElements();
+
+    // Üzenet megjelenítése
+    const messageElement = document.createElement("div");
+    messageElement.id = "endMessage";
+    messageElement.textContent = message;
+    messageElement.classList.add("message");
+    document.body.appendChild(messageElement);
+
+    // Újra gomb létrehozása
+    const retryButton = document.createElement("button");
+    retryButton.id = "retryButton";
+    retryButton.textContent = "Újra";
+    retryButton.onclick = () => {
+        removeEndScreenElements();
+        startGame();
+    };
+    document.body.appendChild(retryButton);
+
+    // Vissza a szintekhez gomb létrehozása
+    const backToLevelsButton = document.createElement("button");
+    backToLevelsButton.id = "backToLevelsButton";
+    backToLevelsButton.textContent = "Vissza a szintekhez";
+    backToLevelsButton.onclick = () => {
+        window.location.href = "szintek.html";
+    };
+    document.body.appendChild(backToLevelsButton);
+}
+
+// Segédfüggvény a játék végi elemek eltávolítására
+function removeEndScreenElements() {
+    const messageElement = document.getElementById("endMessage");
+    const retryButton = document.getElementById("retryButton");
+    const backToLevelsButton = document.getElementById("backToLevelsButton");
+
+    if (messageElement) messageElement.remove();
+    if (retryButton) retryButton.remove();
+    if (backToLevelsButton) backToLevelsButton.remove();
+}
+
     </script>
 </body>
 </html>
